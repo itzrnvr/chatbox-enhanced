@@ -282,7 +282,7 @@ function ThinkingBudgetConfig({
   const { t } = useTranslation()
 
   // Define preset values in one place
-  const PRESET_VALUES = useMemo(() => [2048, 5120, 10240], [])
+  const PRESET_VALUES = useMemo(() => [2048, 5120, 10240, 32768], [])
 
   const thinkingBudgetOptions = useMemo(
     () => [
@@ -290,6 +290,7 @@ function ThinkingBudgetConfig({
       { label: `${t('Low')} (2K)`, value: PRESET_VALUES[0].toString() },
       { label: `${t('Medium')} (5K)`, value: PRESET_VALUES[1].toString() },
       { label: `${t('High')} (10K)`, value: PRESET_VALUES[2].toString() },
+      { label: `${t('Ultimate')} (32K)`, value: PRESET_VALUES[3].toString() },
       { label: t('Custom'), value: 'custom' },
     ],
     [t, PRESET_VALUES]
