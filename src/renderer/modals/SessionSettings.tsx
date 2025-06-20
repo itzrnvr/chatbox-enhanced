@@ -549,7 +549,7 @@ export function ChatConfig({
           </Tooltip>
         </Flex>
 
-        <SliderWithInput value={settings?.temperature} onChange={(v) => onSettingsChange({ temperature: v })} max={2} />
+        <SliderWithInput value={settings?.temperature ?? 0.6} onChange={(v) => onSettingsChange({ temperature: v })} max={2} />
       </Stack>
       <Stack>
         {settings && settings.provider === 'claude' && (

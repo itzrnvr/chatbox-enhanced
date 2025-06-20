@@ -73,6 +73,7 @@ export default class Gemeni extends AbstractAISDKModel {
         } satisfies GoogleGenerativeAIProviderOptions,
       }
     }
+    settings.temperature = this.options.temperature
     return settings
   }
 

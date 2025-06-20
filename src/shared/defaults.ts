@@ -23,7 +23,7 @@ export function settings(): Settings {
 
     // model: 'gpt-4o',
     // openaiCustomModelOptions: [],
-    // temperature: 0.7,
+    temperature: 0.6,
     // topP: 1,
     // // openaiMaxTokens: 0,
     // // openaiMaxContextTokens: 4000,
@@ -142,6 +142,7 @@ export function chatSessionSettings(): SessionSettings {
     provider: ModelProviderEnum.ChatboxAI,
     modelId: 'chatboxai-4',
     maxContextMessageCount: Number.MAX_SAFE_INTEGER,
+    temperature: 0.6,
   }
 }
 
