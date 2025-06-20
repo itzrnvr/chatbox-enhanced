@@ -20,7 +20,7 @@ import { router } from '@/router'
 import { StorageKeyGenerator } from '@/storage/StoreStorage'
 import * as Sentry from '@sentry/react'
 import { getDefaultStore } from 'jotai'
-import { identity, pickBy, throttle } from 'lodash'
+import { identity, merge, mergeWith, pickBy, throttle } from 'lodash'
 import { v4 as uuidv4 } from 'uuid'
 import * as defaults from '../../shared/defaults'
 import {
@@ -1129,7 +1129,23 @@ export function mergeSettings(
   sessionSetting: SessionSettings,
   sessionType?: 'picture' | 'chat'
 ): Settings {
-  return {
+  // Apply default temperature first if not defined
+  const sessionSettingsWithDefaults = {
+    ...sessionSetting,
+    temperature: sessionSetting.temperature === undefined ? 0.6 : sessionSetting.temperature
+  }
+
+  // Custom merge function for providerOptions that handles nested objects properly
+  const customizer = (objValue: any, srcValue: any) => {
+    if (Array.isArray(objValue)) {
+      return srcValue;
+    }
+    if (typeof objValue === 'object' && objValue !== null) {
+      return merge({}, objValue, srcValue);
+    }
+  };
+
+  const mergedSettings = {
     ...globalSettings,
     ...(sessionType === 'picture'
       ? {
@@ -1139,8 +1155,17 @@ export function mergeSettings(
       : {
           maxContextMessageCount: defaults.chatSessionSettings().maxContextMessageCount,
         }),
-    ...sessionSetting,
+    ...sessionSettingsWithDefaults,
+    // Deep merge providerOptions with custom handling for nested objects
+    providerOptions: mergeWith(
+      {},
+      globalSettings.providerOptions,
+      sessionSetting.providerOptions,
+      customizer
+    )
   }
+  
+  return mergedSettings
 }
 
 function omit(obj: any) {

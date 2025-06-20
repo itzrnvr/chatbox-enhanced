@@ -53,7 +53,7 @@ export function getModel(setting: Settings, config: Config): ModelInterface {
           licenseDetail: setting.licenseDetail,
           language: setting.language,
           dalleStyle: setting.dalleStyle || 'vivid',
-          temperature: setting.temperature!,
+          temperature: setting.temperature ?? 0.6,
         },
         config
       )
@@ -63,7 +63,7 @@ export function getModel(setting: Settings, config: Config): ModelInterface {
         apiHost: formattedApiHost,
         model: model,
         dalleStyle: setting.dalleStyle || 'vivid',
-        temperature: setting.temperature!,
+        temperature: setting.temperature ?? 0.6,
         topP: setting.topP,
         injectDefaultMetadata: setting.injectDefaultMetadata,
         useProxy: false, // 之前的openaiUseProxy已经没有在使用，直接写死false
@@ -76,7 +76,7 @@ export function getModel(setting: Settings, config: Config): ModelInterface {
         azureDalleDeploymentName: providerSetting.dalleDeploymentName || '',
         azureApikey: providerSetting.apiKey || '',
         azureApiVersion: providerSetting.apiVersion || providerBaseInfo.defaultSettings?.apiVersion || '',
-        temperature: setting.temperature!,
+        temperature: setting.temperature ?? 0.6,
         topP: setting.topP || 0,
         dalleStyle: setting.dalleStyle || 'vivid',
         imageGenerateNum: setting.imageGenerateNum || 1,
@@ -101,28 +101,28 @@ export function getModel(setting: Settings, config: Config): ModelInterface {
         geminiAPIKey: providerSetting.apiKey || '',
         geminiAPIHost: formattedApiHost,
         model,
-        temperature: setting.temperature!,
+        temperature: setting.temperature ?? 0.6,
       })
 
     case ModelProviderEnum.Ollama:
       return new Ollama({
         ollamaHost: formattedApiHost,
         model,
-        temperature: setting.temperature!,
+        temperature: setting.temperature ?? 0.6,
       })
 
     case ModelProviderEnum.Groq:
       return new Groq({
         groqAPIKey: providerSetting.apiKey || '',
         model,
-        temperature: setting.temperature!,
+        temperature: setting.temperature ?? 0.6,
       })
 
     case ModelProviderEnum.DeepSeek:
       return new DeepSeek({
         deepseekAPIKey: providerSetting.apiKey || '',
         model,
-        temperature: setting.temperature,
+        temperature: setting.temperature ?? 0.6,
         topP: setting.topP,
       })
 
@@ -130,7 +130,7 @@ export function getModel(setting: Settings, config: Config): ModelInterface {
       return new SiliconFlow({
         siliconCloudKey: providerSetting.apiKey || '',
         model,
-        temperature: setting.temperature,
+        temperature: setting.temperature ?? 0.6,
         topP: setting.topP,
       })
 
@@ -138,7 +138,7 @@ export function getModel(setting: Settings, config: Config): ModelInterface {
       return new VolcEngine({
         apiKey: providerSetting.apiKey || '',
         model,
-        temperature: setting.temperature,
+        temperature: setting.temperature ?? 0.6,
         topP: setting.topP,
       })
 
@@ -146,7 +146,7 @@ export function getModel(setting: Settings, config: Config): ModelInterface {
       return new LMStudio({
         lmStudioHost: formattedApiHost,
         model,
-        temperature: setting.temperature,
+        temperature: setting.temperature ?? 0.6,
         topP: setting.topP,
       })
 
@@ -154,7 +154,7 @@ export function getModel(setting: Settings, config: Config): ModelInterface {
       return new Perplexity({
         perplexityApiKey: providerSetting.apiKey || '',
         model,
-        temperature: setting.temperature,
+        temperature: setting.temperature ?? 0.6,
         topP: setting.topP,
       })
 
@@ -162,7 +162,7 @@ export function getModel(setting: Settings, config: Config): ModelInterface {
       return new XAI({
         xAIKey: providerSetting.apiKey || '',
         model,
-        temperature: setting.temperature,
+        temperature: setting.temperature ?? 0.6,
         topP: setting.topP,
       })
     default:
@@ -172,7 +172,7 @@ export function getModel(setting: Settings, config: Config): ModelInterface {
           apiHost: formattedApiHost,
           apiPath: providerSetting.apiPath || '',
           model,
-          temperature: setting.temperature,
+          temperature: setting.temperature ?? 0.6,
           topP: setting.topP,
           useProxy: providerSetting.useProxy,
         })
