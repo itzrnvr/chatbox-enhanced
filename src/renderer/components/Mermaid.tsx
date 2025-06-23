@@ -67,34 +67,39 @@ export function MermaidSVGPreviewDangerous(props: {
     return <Loading />
   }
   return (
-    <div
-      className={cn('cursor-pointer my-2', className)}
-      onClick={async () => {
-        const svg = document.getElementById(svgId)
-        if (!svg) {
-          return
-        }
-        const serializedSvgCode = new XMLSerializer().serializeToString(svg)
-        const base64 = picUtils.svgCodeToBase64(serializedSvgCode)
-        const pngBase64 = await picUtils.svgToPngBase64(base64)
-        setPictureShow({
-          picture: {
-            url: pngBase64,
-          },
-          extraButtons: [
-            {
-              onClick: () => {
-                copyToClipboard(mermaidCode)
-                toastActions.add(t('copied to clipboard'))
-              },
-              icon: <DataObjectIcon />,
-            },
-          ],
-        })
-      }}
-    >
+    <div className={cn('my-2', className)}>
+      {/* Copy raw code button always visible */}
+      <button
+        className="mb-2 px-2 py-1 rounded bg-gray-200 hover:bg-gray-300 text-gray-800 dark:text-gray-100 text-xs font-mono"
+        onClick={() => {
+          copyToClipboard(mermaidCode)
+          toastActions.add(t('copied to clipboard'))
+        }}
+        style={{ float: 'right' }}
+        title="Copy raw Mermaid code"
+      >
+        Copy raw code
+      </button>
       {/* 这里直接注入了 svg 代码 */}
-      <div dangerouslySetInnerHTML={{ __html: svgCode }} />
+      <div
+        className="cursor-pointer"
+        onClick={async () => {
+          const svg = document.getElementById(svgId)
+          if (!svg) {
+            return
+          }
+          const serializedSvgCode = new XMLSerializer().serializeToString(svg)
+          const base64 = picUtils.svgCodeToBase64(serializedSvgCode)
+          const pngBase64 = await picUtils.svgToPngBase64(base64)
+          setPictureShow({
+            picture: {
+              url: pngBase64,
+            },
+          })
+        }}
+      >
+        <div dangerouslySetInnerHTML={{ __html: svgCode }} />
+      </div>
     </div>
   )
 }
@@ -139,10 +144,62 @@ export function SVGPreview(props: { xmlCode: string; className?: string; generat
 async function mermaidCodeToSvgCode(source: string, theme: 'light' | 'dark') {
   mermaid.initialize({ theme: theme === 'light' ? 'default' : 'dark' })
   const id = 'mermaidtmp' + Math.random().toString(36).substring(2, 15)
-  const result = await mermaid.render(id, source)
-  // 考虑到 mermaid 工具内部本身已经使用了 dompurify 进行处理，因此可以先假设它的输出是安全的
-  // 经过测试，发现 dompurify.sanitize 有时候会导致最终的 svg 显示不完整
-  // 考虑到现代浏览器都不会执行 svg 中的 script 标签，所以这里不进行 sanitize。参考：https://stackoverflow.com/questions/7917008/xss-when-loading-untrusted-svg-using-img-tag
-  // return dompurify.sanitize(result.svg, { USE_PROFILES: { svg: true, svgFilters: true } })
-  return { id, svg: result.svg }
+  
+  let sanitizedSource = source;
+  
+  // First protect time formats (e.g. "90m:") by quoting them
+  sanitizedSource = sanitizedSource.replace(/(\w+)\[([^\]]*)\]/g, (match, id, text) => {
+    // If text contains time format like "90m:" and is not already quoted
+    if (text.match(/\d+m:/) && !(text.startsWith('"') && text.endsWith('"'))) {
+      const escapedText = text.replace(/"/g, '""');
+      return `${id}["${escapedText}"]`;
+    }
+    return match;
+  });
+
+  // Then remove actual ANSI escape codes
+  // eslint-disable-next-line no-control-regex
+  const ansiRegex = /[\u001b\u009b][[()#;?]*.{0,2}(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g;
+  sanitizedSource = sanitizedSource.replace(ansiRegex, '');
+
+  // Auto-correct common Mermaid mistake: quote node text containing colons
+  sanitizedSource = sanitizedSource.replace(/(\w+)\[([^\]]*)\]/g, (match, id, text) => {
+    // If text contains a colon and is not already quoted
+    if (text.includes(':') && !(text.startsWith('"') && text.endsWith('"'))) {
+      const escapedText = text.replace(/"/g, '""'); // Mermaid uses "" to escape quotes
+      return `${id}["${escapedText}"]`;
+    }
+    return match;
+  });
+
+  // Validate syntax and render with error fallback
+  try {
+    await mermaid.parse(sanitizedSource);
+    const result = await mermaid.render(id, sanitizedSource);
+    return { id, svg: result.svg };
+  } catch (error) {
+    console.error('Mermaid syntax error:', error);
+    const errorMessage = (error instanceof Error) ? error.message : 'Unknown error';
+    // Sanitize error message for SVG embedding
+    const sanitizedErrorMessage = errorMessage
+        .replace(/&/g, '&')
+        .replace(/</g, '<')
+        .replace(/>/g, '>')
+        .replace(/"/g, '"')
+        .replace(/'/g, '&#039;');
+
+    // Fallback to a placeholder SVG with the detailed error message
+    const errorSvg = `<svg width="100%" height="200" xmlns="http://www.w3.org/2000/svg">
+      <style>
+        .title { font-family: Arial, sans-serif; font-size: 16px; font-weight: bold; fill: #D32F2F; }
+        .message { font-family: 'Courier New', monospace; font-size: 12px; fill: #333; }
+      </style>
+      <rect width="100%" height="100%" fill="#FFF0F0" stroke="#D32F2F" stroke-width="1"/>
+      <text x="10" y="25" class="title">Mermaid Diagram Failed to Render</text>
+      <text x="10" y="50" class="message">
+        ${sanitizedErrorMessage.split('\n').map((line, index) => `<tspan x="10" dy="${index === 0 ? 0 : '1.2em'}">${line}</tspan>`).join('')}
+      </text>
+    </svg>`;
+    return { id, svg: errorSvg };
+  }
 }
