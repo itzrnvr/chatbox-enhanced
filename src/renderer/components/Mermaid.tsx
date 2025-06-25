@@ -70,7 +70,7 @@ export function MermaidSVGPreviewDangerous(props: {
     <div className={cn('my-2', className)}>
       {/* Copy raw code button always visible */}
       <button
-        className="mb-2 px-2 py-1 rounded bg-gray-200 hover:bg-gray-300 text-gray-800 dark:text-gray-100 text-xs font-mono"
+        className="mb-2 px-2 py-1 rounded bg-gray-800 hover:bg-gray-700 text-white text-xs font-mono"
         onClick={() => {
           copyToClipboard(mermaidCode)
           toastActions.add(t('copied to clipboard'))
