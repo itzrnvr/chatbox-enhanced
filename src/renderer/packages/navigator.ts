@@ -14,6 +14,19 @@ export function copyToClipboard(text: string) {
   }
 }
 
+export async function copyImageToClipboard(base64Data: string) {
+  try {
+    const blob = await (await fetch(base64Data)).blob()
+    await navigator.clipboard.write([
+      new ClipboardItem({
+        [blob.type]: blob,
+      }),
+    ])
+  } catch (e) {
+    Sentry.captureException(e)
+  }
+}
+
 const ua = navigator.userAgent
 
 export const getBrowser = (): 'Opera' | 'Chrome' | 'Firefox' | 'Safari' | 'IE' | 'Edge' | 'Unknown' | undefined => {

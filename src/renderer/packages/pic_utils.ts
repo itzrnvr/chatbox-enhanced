@@ -121,11 +121,3 @@ export async function svgToPngBase64(svgBase64: string): Promise<string> {
   })
 }
 
-export function downloadBase64Image(base64Data: string, filename: string) {
-  const link = document.createElement('a')
-  link.href = base64Data
-  link.download = filename
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
-}

@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from 'react'
 import * as atoms from '@/stores/atoms'
 import { ChartBarStacked, Copy, ImageDown } from 'lucide-react'
 import { Img } from './Image'
-import { copyToClipboard } from '@/packages/navigator'
+import { copyToClipboard, copyImageToClipboard } from '@/packages/navigator'
 import { cn } from '@/lib/utils'
 import * as toastActions from '../stores/toastActions'
 import { useTranslation } from 'react-i18next'
@@ -69,7 +69,7 @@ export function MermaidSVGPreviewDangerous(props: {
     const serializedSvgCode = new XMLSerializer().serializeToString(svg)
     const base64 = picUtils.svgCodeToBase64(serializedSvgCode)
     const pngBase64 = await picUtils.svgToPngBase64(base64)
-    picUtils.downloadBase64Image(pngBase64, 'mermaid.png')
+    await copyImageToClipboard(pngBase64)
     toastActions.add(t('copied to clipboard'))
   }
 
