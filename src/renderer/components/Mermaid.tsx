@@ -2,14 +2,14 @@ import { useSetAtom } from 'jotai'
 import mermaid from 'mermaid'
 import { useEffect, useState, useMemo } from 'react'
 import * as atoms from '@/stores/atoms'
-import { ChartBarStacked } from 'lucide-react'
+import { ChartBarStacked, Copy, ImageDown } from 'lucide-react'
 import { Img } from './Image'
 import { copyToClipboard } from '@/packages/navigator'
 import { cn } from '@/lib/utils'
-import DataObjectIcon from '@mui/icons-material/DataObject'
 import * as toastActions from '../stores/toastActions'
 import { useTranslation } from 'react-i18next'
 import * as picUtils from '@/packages/pic_utils'
+import MiniButton from './MiniButton'
 
 export function MessageMermaid(props: { source: string; theme: 'light' | 'dark'; generating?: boolean }) {
   const { source, theme, generating } = props
@@ -28,15 +28,10 @@ export function MessageMermaid(props: { source: string; theme: 'light' | 'dark';
   }, [source, theme, generating])
 
   if (generating) {
-    // 测试下来，发现这种方法是视觉效果最好的。
-    // 如果根据 mermaid 是否正常渲染来判断，有时候残缺的 mermaid 也可以渲染出部分图形，这会造成视觉上的闪屏混乱。
     return <Loading />
   }
 
-  return (
-    // <SVGPreview xmlCode={svgCode} />
-    <MermaidSVGPreviewDangerous svgId={svgId} svgCode={svgCode} mermaidCode={source} />
-  )
+  return <MermaidSVGPreviewDangerous svgId={svgId} svgCode={svgCode} mermaidCode={source} />
 }
 
 export function Loading() {
@@ -48,11 +43,6 @@ export function Loading() {
   )
 }
 
-/**
- * 直接将 svg 代码注入到页面中，通过浏览器自身的修复能力处理 svg 代码，再通过 serializeToString 得到规范的 svg 代码。
- * 经过各种测试，发现有时候 mermaid 生成的 svg 代码并不规范，直接转化 base64 将无法完整显示。
- * 这里的做法是直接将 svg 代码注入到页面中，通过浏览器自身的修复能力处理 svg 代码，再通过 serializeToString 得到规范的 svg 代码。
- */
 export function MermaidSVGPreviewDangerous(props: {
   svgCode: string
   svgId: string
@@ -63,31 +53,43 @@ export function MermaidSVGPreviewDangerous(props: {
   const { svgId, svgCode, mermaidCode, className, generating } = props
   const { t } = useTranslation()
   const setPictureShow = useSetAtom(atoms.pictureShowAtom)
+
   if (!svgCode.includes('</svg') && generating) {
     return <Loading />
   }
+
+  const handleCopyRaw = () => {
+    copyToClipboard(mermaidCode)
+    toastActions.add(t('copied to clipboard'))
+  }
+
+  const handleCopyPng = async () => {
+    const svg = document.getElementById(svgId)
+    if (!svg) return
+    const serializedSvgCode = new XMLSerializer().serializeToString(svg)
+    const base64 = picUtils.svgCodeToBase64(serializedSvgCode)
+    const pngBase64 = await picUtils.svgToPngBase64(base64)
+    picUtils.downloadBase64Image(pngBase64, 'mermaid.png')
+    toastActions.add(t('copied to clipboard'))
+  }
+
   return (
-    <div className={cn('my-2', className)}>
-      {/* Copy raw code button always visible */}
-      <button
-        className="mb-2 px-2 py-1 rounded bg-gray-800 hover:bg-gray-700 text-white text-xs font-mono"
-        onClick={() => {
-          copyToClipboard(mermaidCode)
-          toastActions.add(t('copied to clipboard'))
-        }}
-        style={{ float: 'right' }}
-        title="Copy raw Mermaid code"
+    <div className={cn('my-2 relative group/mermaid', className)}>
+      <div
+        className="absolute top-2 right-2 opacity-0 group-hover/mermaid:opacity-100 transition-opacity duration-200 flex items-center gap-2 z-10"
       >
-        Copy raw code
-      </button>
-      {/* 这里直接注入了 svg 代码 */}
+        <MiniButton onClick={handleCopyRaw} tooltipTitle="Copy raw Mermaid code">
+          <Copy size={16} />
+        </MiniButton>
+        <MiniButton onClick={handleCopyPng} tooltipTitle="Copy as PNG">
+          <ImageDown size={16} />
+        </MiniButton>
+      </div>
       <div
         className="cursor-pointer"
         onClick={async () => {
           const svg = document.getElementById(svgId)
-          if (!svg) {
-            return
-          }
+          if (!svg) return
           const serializedSvgCode = new XMLSerializer().serializeToString(svg)
           const base64 = picUtils.svgCodeToBase64(serializedSvgCode)
           const pngBase64 = await picUtils.svgToPngBase64(base64)
