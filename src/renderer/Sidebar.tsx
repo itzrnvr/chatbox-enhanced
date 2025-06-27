@@ -129,13 +129,10 @@ function SidebarButtons(props: { sessionListRef: React.RefObject<HTMLDivElement>
   const navigate = useNavigate()
 
   const handleCreateNewSession = () => {
-    // sessionActions.createEmpty('chat')
-    // if (sessionListRef.current) {
-    //   sessionListRef.current.scrollTo(0, 0)
-    // }
-    navigate({
-      to: `/`,
-    })
+    sessionActions.createEmpty('chat')
+    if (sessionListRef.current) {
+      sessionListRef.current.scrollTo(0, 0)
+    }
     trackingEvent('create_new_conversation', { event_category: 'user' })
   }
 
