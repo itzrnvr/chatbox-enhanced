@@ -174,3 +174,4 @@ electron-builder.env
 **/routeTree.gen.ts
 
 .env.sentry-build-plugin
+.aider*

@@ -116,6 +116,9 @@ const configuration: webpack.Configuration = {
     ],
   },
   plugins: [
+    new webpack.WatchIgnorePlugin({
+      paths: [/desktop\.ini$/],
+    }),
     ...(skipDLLs
       ? []
       : [
@@ -131,8 +134,8 @@ const configuration: webpack.Configuration = {
     TanStackRouterWebpack({
       target: 'react',
       autoCodeSplitting: true,
-      routesDirectory: './src/renderer/routes',
-      generatedRouteTree: './src/renderer/routeTree.gen.ts',
+      routesDirectory: path.join(webpackPaths.srcRendererPath, 'routes'),
+      generatedRouteTree: path.join(webpackPaths.srcRendererPath, 'routeTree.gen.ts'),
     }),
 
     /**

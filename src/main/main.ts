@@ -15,6 +15,7 @@ import log from 'electron-log/main'
 import MenuBuilder from './menu'
 import { resolveHtmlPath } from './util'
 import Locale from './locales'
+import { autoUpdater } from 'electron-updater'
 import {
   store,
   getConfig,
@@ -36,6 +37,7 @@ import { parseFile } from './file-parser'
 // 参考：https://stackoverflow.com/questions/65859634/notification-from-electron-shows-electron-app-electron
 if (process.platform === 'win32') {
   app.setAppUserModelId(app.name)
+  app.setPath('userData', path.join(app.getPath('appData'), app.name))
 }
 
 const RESOURCES_PATH = app.isPackaged
