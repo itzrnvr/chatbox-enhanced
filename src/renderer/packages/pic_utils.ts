@@ -120,3 +120,4 @@ export async function svgToPngBase64(svgBase64: string): Promise<string> {
     img.src = svgBase64
   })
 }
+

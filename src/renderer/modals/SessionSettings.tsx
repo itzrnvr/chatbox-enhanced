@@ -1,46 +1,23 @@
-import {
-  ModelProvider,
-  ModelSettings,
-  Session,
-  createMessage,
-  isChatSession,
-  isPictureSession,
-} from '@/../shared/types'
+import { Session, SessionSettings, createMessage, isChatSession, isPictureSession } from '@/../shared/types'
 import { Accordion, AccordionDetails, AccordionSummary } from '@/components/Accordion'
-import AIProviderSelect from '@/components/AIProviderSelect'
-import CreatableSelect from '@/components/CreatableSelect'
 import EditableAvatar from '@/components/EditableAvatar'
 import { ImageInStorage, handleImageInputAndSave } from '@/components/Image'
 import ImageCountSlider from '@/components/ImageCountSlider'
 import ImageStyleSelect from '@/components/ImageStyleSelect'
-import MaxContextMessageCountSlider, {
-  toBeRemoved_getContextMessageCount,
-} from '@/components/MaxContextMessageCountSlider'
-import ChatboxAIModelSelect from '@/components/model-select/ChatboxAIModelSelect'
-import ChatGLMModelSelect from '@/components/model-select/ChatGLMModelSelect'
-import ClaudeModelSelect from '@/components/model-select/ClaudeModelSelect'
-import DeepSeekModelSelect from '@/components/model-select/DeepSeekModelSelect'
-import GeminiModelSelect from '@/components/model-select/GeminiModelSelect'
-import GropModelSelect from '@/components/model-select/GroqModelSelect'
-import LMStudioModelSelect from '@/components/model-select/LMStudioModelSelect'
-import { OllamaModelSelect } from '@/components/model-select/OllamaModelSelect'
-import OpenAIModelSelect from '@/components/model-select/OpenAIModelSelect'
-import { PerplexityModelSelect } from '@/components/model-select/PerplexityModelSelect'
-import { SiliconflowModelSelect } from '@/components/model-select/SiliconflowModelSelect'
-import { XAIModelSelect } from '@/components/model-select/XAIModelSelect'
-import TemperatureSlider from '@/components/TemperatureSlider'
-import TopPSlider from '@/components/TopPSlider'
+import MaxContextMessageCountSlider from '@/components/MaxContextMessageCountSlider'
+import SliderWithInput from '@/components/SliderWithInput'
 import { useIsSmallScreen } from '@/hooks/useScreenChange'
 import { trackingEvent } from '@/packages/event'
-import { OllamaHostInput } from '@/pages/SettingDialog/OllamaSetting'
 import { StorageKeyGenerator } from '@/storage/StoreStorage'
 import * as atoms from '@/stores/atoms'
-import { getSession, saveSession } from '@/stores/sessionStorageMutations'
 import * as sessionActions from '@/stores/sessionActions'
+import { getSession, saveSession } from '@/stores/sessionStorageMutations'
 import { getMessageText } from '@/utils/message'
 import NiceModal, { muiDialogV5, useModal } from '@ebay/nice-modal-react'
+import { Flex, Stack, Text, Tooltip } from '@mantine/core'
 import ImageIcon from '@mui/icons-material/Image'
 import SmartToyIcon from '@mui/icons-material/SmartToy'
+import SegmentedControl from '@/components/SegmentedControl'
 import {
   Button,
   Dialog,
@@ -48,14 +25,15 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
-  Divider,
   TextField,
   Typography,
   useTheme,
 } from '@mui/material'
-import { useAtom, useAtomValue } from 'jotai'
-import React, { useEffect } from 'react'
+import { IconInfoCircle } from '@tabler/icons-react'
+import { useAtomValue } from 'jotai'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { chatSessionSettings, pictureSessionSettings } from 'src/shared/defaults'
 
 const SessionSettings = NiceModal.create(({ chatConfigDialogSessionId }: { chatConfigDialogSessionId: string }) => {
   const modal = useModal()
@@ -65,7 +43,7 @@ const SessionSettings = NiceModal.create(({ chatConfigDialogSessionId }: { chatC
   const theme = useTheme()
 
   const chatConfigDialogSession = getSession(chatConfigDialogSessionId || '')
-  const [editingData, setEditingData] = React.useState<Session | null>(chatConfigDialogSession || null)
+  const [editingData, setEditingData] = useState<Session | null>(chatConfigDialogSession || null)
   useEffect(() => {
     if (!chatConfigDialogSession) {
       setEditingData(null)
@@ -77,7 +55,7 @@ const SessionSettings = NiceModal.create(({ chatConfigDialogSessionId }: { chatC
     }
   }, [chatConfigDialogSessionId])
 
-  const [systemPrompt, setSystemPrompt] = React.useState('')
+  const [systemPrompt, setSystemPrompt] = useState('')
   useEffect(() => {
     if (!chatConfigDialogSession) {
       setSystemPrompt('')
@@ -90,12 +68,20 @@ const SessionSettings = NiceModal.create(({ chatConfigDialogSessionId }: { chatC
   const onReset = (event: React.MouseEvent) => {
     event.stopPropagation()
     event.preventDefault()
-    if (chatConfigDialogSession) {
-      setEditingData({
-        ...chatConfigDialogSession,
-        settings: undefined,
-      })
-    }
+    setEditingData((_editingData) =>
+      _editingData
+        ? {
+            ..._editingData,
+            settings: {
+              ..._editingData.settings,
+              maxContextMessageCount: undefined,
+              temperature: undefined,
+              dalleStyle: pictureSessionSettings().dalleStyle,
+              imageGenerateNum: pictureSessionSettings().imageGenerateNum,
+            },
+          }
+        : _editingData
+    )
   }
 
   useEffect(() => {
@@ -153,10 +139,17 @@ const SessionSettings = NiceModal.create(({ chatConfigDialogSessionId }: { chatC
       <DialogTitle>{t('Conversation Settings')}</DialogTitle>
       <DialogContent>
         <DialogContentText></DialogContentText>
+
         <EditableAvatar
           onChange={(event) => {
-            const key = StorageKeyGenerator.picture(`assistant-avatar:${chatConfigDialogSession?.id}`)
-            handleImageInputAndSave(event, key, () => setEditingData({ ...editingData, assistantAvatarKey: key }))
+            if (!event.target.files) {
+              return
+            }
+            const file = event.target.files[0]
+            if (file) {
+              const key = StorageKeyGenerator.picture(`assistant-avatar:${chatConfigDialogSession?.id}`)
+              handleImageInputAndSave(file, key, () => setEditingData({ ...editingData, assistantAvatarKey: key }))
+            }
           }}
           onRemove={() => {
             setEditingData({ ...editingData, assistantAvatarKey: undefined })
@@ -219,20 +212,39 @@ const SessionSettings = NiceModal.create(({ chatConfigDialogSessionId }: { chatC
             onChange={(event) => setSystemPrompt(event.target.value)}
           />
         </div>
-        <Accordion defaultExpanded={!!editingData.settings} className="mt-2">
+
+        <Accordion defaultExpanded={true} className="mt-2">
           <AccordionSummary aria-controls="panel1a-content">
             <div className="flex flex-row w-full justify-between items-center">
               <Typography>{t('Specific model settings')}</Typography>
-              {editingData.settings && (
-                <Button size="small" variant="text" color="warning" onClick={onReset}>
-                  {t('Reset to Global Settings')}
-                </Button>
-              )}
             </div>
+            {editingData.settings && (
+              <Button size="small" variant="text" onClick={onReset}>
+                {t('Reset')}
+              </Button>
+            )}
           </AccordionSummary>
           <AccordionDetails>
+            {/* <Text>{JSON.stringify(editingData.settings)}</Text> */}
             {isChatSession(chatConfigDialogSession) && (
-              <ChatConfig dataEdit={editingData} setDataEdit={setEditingData} />
+              <ChatConfig
+                settings={editingData.settings}
+                onSettingsChange={(d) =>
+                  setEditingData((_data) => {
+                    if (_data) {
+                      return {
+                        ..._data,
+                        settings: {
+                          ..._data?.settings,
+                          ...d,
+                        },
+                      }
+                    } else {
+                      return null
+                    }
+                  })
+                }
+              />
             )}
             {isPictureSession(chatConfigDialogSession) && (
               <PictureConfig dataEdit={editingData} setDataEdit={setEditingData} />
@@ -250,240 +262,314 @@ const SessionSettings = NiceModal.create(({ chatConfigDialogSessionId }: { chatC
 
 export default SessionSettings
 
-function ChatConfig(props: { dataEdit: Session; setDataEdit: (data: Session) => void }) {
-  const { dataEdit, setDataEdit } = props
+interface ThinkingBudgetConfigProps {
+  currentBudgetTokens: number
+  isEnabled: boolean
+  onConfigChange: (config: { budgetTokens: number; enabled: boolean }) => void
+  tooltipText: string
+  minValue?: number
+}
+
+function ThinkingBudgetConfig({
+  currentBudgetTokens,
+  isEnabled,
+  onConfigChange,
+  tooltipText,
+  minValue = 1024,
+}: ThinkingBudgetConfigProps) {
   const { t } = useTranslation()
-  const licenseDetail = useAtomValue(atoms.licenseDetailAtom)
-  // 全局设置
-  const [globalSettings, setGlobalSettings] = useAtom(atoms.settingsAtom)
-  // 会话生效设置 = 全局设置 + 会话设置
-  const mergedSettings = sessionActions.mergeSettings(globalSettings, dataEdit.settings || {}, dataEdit.type || 'chat')
-  // 修改当前会话设置
-  const updateSettingsEdit = (updated: Partial<ModelSettings>) => {
-    setDataEdit({
-      ...dataEdit,
-      settings: {
-        ...(dataEdit.settings || {}),
-        ...updated,
+
+  // Define preset values in one place
+  const PRESET_VALUES = useMemo(() => [2048, 5120, 10240, 32768, 65536, 131072], [])
+
+  const thinkingBudgetOptions = useMemo(
+    () => [
+      { label: t('Disabled'), value: 'disabled' },
+      { label: `${t('Low')} (2K)`, value: PRESET_VALUES[0].toString() },
+      { label: `${t('Medium')} (5K)`, value: PRESET_VALUES[1].toString() },
+      { label: `${t('High')} (10K)`, value: PRESET_VALUES[2].toString() },
+      { label: `${t('Ultimate')} (32K)`, value: PRESET_VALUES[3].toString() },
+      { label: t('Custom'), value: 'custom' },
+    ],
+    [t, PRESET_VALUES]
+  )
+
+  // Add state to track custom mode selection
+  const [isCustomMode, setIsCustomMode] = useState(false)
+  const [userSelectedCustom, setUserSelectedCustom] = useState(false)
+
+  // Initialize custom mode based on current budget tokens
+  useEffect(() => {
+    if (isEnabled) {
+      const matchesPreset = PRESET_VALUES.includes(currentBudgetTokens)
+      // Only auto-set custom mode if user hasn't manually selected custom and value doesn't match presets
+      if (!matchesPreset && !isCustomMode && !userSelectedCustom) {
+        setIsCustomMode(true)
+      }
+      // Don't override user's manual custom selection even if value matches preset
+    } else {
+      // Only reset if currently in custom mode
+      if (isCustomMode || userSelectedCustom) {
+        setIsCustomMode(false)
+        setUserSelectedCustom(false)
+      }
+    }
+  }, [isEnabled, currentBudgetTokens, PRESET_VALUES])
+
+  // Determine current segment value
+  const getCurrentSegmentValue = useCallback(() => {
+    if (!isEnabled) return 'disabled'
+
+    if (isCustomMode || userSelectedCustom) return 'custom'
+
+    const matchingPreset = PRESET_VALUES.find((preset) => preset === currentBudgetTokens)
+    return matchingPreset ? matchingPreset.toString() : 'custom'
+  }, [isEnabled, isCustomMode, userSelectedCustom, PRESET_VALUES, currentBudgetTokens])
+
+  const handleThinkingConfigChange = useCallback(
+    (value: string) => {
+      if (value === 'disabled') {
+        setIsCustomMode(false)
+        setUserSelectedCustom(false)
+        onConfigChange({ budgetTokens: 0, enabled: false })
+      } else if (value === 'custom') {
+        setIsCustomMode(true)
+        setUserSelectedCustom(true) // Mark that user manually selected custom
+        // For disabled to custom switch, use a reasonable default
+        const customValue = currentBudgetTokens > 0 ? currentBudgetTokens : minValue || PRESET_VALUES[0]
+        onConfigChange({ budgetTokens: customValue, enabled: true })
+      } else {
+        setIsCustomMode(false)
+        setUserSelectedCustom(false)
+        onConfigChange({ budgetTokens: parseInt(value), enabled: true })
+      }
+    },
+    [currentBudgetTokens, minValue, PRESET_VALUES, onConfigChange]
+  )
+
+  const handleCustomBudgetChange = useCallback(
+    (v: number | undefined) => {
+      onConfigChange({ budgetTokens: v || minValue, enabled: true })
+    },
+    [minValue, onConfigChange]
+  )
+
+  const currentSegmentValue = getCurrentSegmentValue()
+
+  return (
+    <Stack gap="md">
+      <Flex align="center" gap="xs">
+        <Text size="sm" fw="600">
+          {t('Thinking Budget')}
+        </Text>
+        <Tooltip label={tooltipText} withArrow={true} maw={320} className="!whitespace-normal" zIndex={3000}>
+          <IconInfoCircle size={20} className="text-[var(--mantine-color-chatbox-tertiary-text)]" />
+        </Tooltip>
+      </Flex>
+
+      <SegmentedControl
+        key="thinking-budget-control"
+        value={currentSegmentValue}
+        onChange={handleThinkingConfigChange}
+        data={thinkingBudgetOptions}
+      />
+
+      {currentSegmentValue === 'custom' && (
+        <SliderWithInput
+          min={minValue}
+          step={1}
+          max={131072}
+          value={currentBudgetTokens}
+          onChange={handleCustomBudgetChange}
+        />
+      )}
+    </Stack>
+  )
+}
+
+function ClaudeProviderConfig({
+  settings,
+  onSettingsChange,
+}: {
+  settings: SessionSettings
+  onSettingsChange: (data: Session['settings']) => void
+}) {
+  const { t } = useTranslation()
+  const providerOptions = settings?.providerOptions?.claude || {}
+
+  const handleConfigChange = (config: { budgetTokens: number; enabled: boolean }) => {
+    onSettingsChange({
+      providerOptions: {
+        claude: {
+          thinking: {
+            type: config.enabled ? 'enabled' : 'disabled',
+            budgetTokens: config.budgetTokens,
+          },
+        },
       },
     })
   }
-  const specificSettings = dataEdit.settings || {}
-
-  // 当前选择的自定义提供方的全局设置
-  const globalCustomProvider = globalSettings.customProviders.find(
-    (provider) => provider.id === mergedSettings.selectedCustomProviderId
-  )
-  // 当前选择的自定义提供方的选中模型
-  const sessionCustomProviderModel = (
-    mergedSettings.customProviders.find((provider) => provider.id === mergedSettings.selectedCustomProviderId) ||
-    globalCustomProvider
-  )?.model
 
   return (
-    <>
-      <AIProviderSelect
-        aiProvider={mergedSettings.aiProvider}
-        onSwitchAIProvider={(v) => updateSettingsEdit({ aiProvider: v })}
-        selectedCustomProviderId={mergedSettings.selectedCustomProviderId}
-        onSwitchCustomProvider={(v) =>
-          updateSettingsEdit({
-            aiProvider: ModelProvider.Custom,
-            selectedCustomProviderId: v,
-          })
-        }
-        className={specificSettings.aiProvider === undefined ? 'opacity-50' : ''}
-        hideCustomProviderManage
+    <ThinkingBudgetConfig
+      currentBudgetTokens={providerOptions.thinking?.budgetTokens || 1024}
+      isEnabled={providerOptions.thinking?.type === 'enabled'}
+      onConfigChange={handleConfigChange}
+      tooltipText={t('Thinking Budget only works for 3.7 or later models')}
+      minValue={1024}
+    />
+  )
+}
+
+function OpenAIProviderConfig({
+  settings,
+  onSettingsChange,
+}: {
+  settings: SessionSettings
+  onSettingsChange: (data: Session['settings']) => void
+}) {
+  const { t } = useTranslation()
+  const providerOptions = settings?.providerOptions?.openai || {}
+
+  // Memoize options to prevent recreation on every render
+  const reasoningEffortOptions = useMemo(
+    () => [
+      { label: t('Disabled'), value: 'null' },
+      { label: t('Low'), value: 'low' },
+      { label: t('Medium'), value: 'medium' },
+      { label: t('High'), value: 'high' },
+    ],
+    [t]
+  )
+
+  const handleReasoningEffortChange = useCallback(
+    (value: string) => {
+      const reasoningEffort = value === 'null' ? null : (value as 'low' | 'medium' | 'high')
+      onSettingsChange({
+        providerOptions: {
+          openai: { reasoningEffort },
+        },
+      })
+    },
+    [onSettingsChange]
+  )
+
+  // Simplify value calculation to avoid instability
+  const currentValue = useMemo(() => {
+    const effort = providerOptions.reasoningEffort
+    return effort === null || effort === undefined ? 'null' : effort
+  }, [providerOptions.reasoningEffort])
+
+  return (
+    <Stack gap="md">
+      <Flex align="center" gap="xs">
+        <Text size="sm" fw="600">
+          {t('Thinking Effort')}
+        </Text>
+        <Tooltip
+          label={t('Thinking Effort only works for OpenAI o-series models')}
+          withArrow={true}
+          maw={320}
+          className="!whitespace-normal"
+          zIndex={3000}
+        >
+          <IconInfoCircle size={20} className="text-[var(--mantine-color-chatbox-tertiary-text)]" />
+        </Tooltip>
+      </Flex>
+
+      <SegmentedControl
+        key="reasoning-effort-control"
+        value={currentValue}
+        onChange={handleReasoningEffortChange}
+        data={reasoningEffortOptions}
       />
-      <Divider sx={{ margin: '16px 0' }} />
-      {mergedSettings.aiProvider === ModelProvider.ChatboxAI && (
-        <>
-          {licenseDetail && (
-            <ChatboxAIModelSelect
-              settingsEdit={mergedSettings}
-              setSettingsEdit={updateSettingsEdit}
-              className={specificSettings.chatboxAIModel === undefined ? 'opacity-50' : ''}
-            />
-          )}
-        </>
-      )}
-      {mergedSettings.aiProvider === ModelProvider.OpenAI && (
-        <>
-          <OpenAIModelSelect
-            settingsEdit={mergedSettings}
-            setSettingsEdit={updateSettingsEdit}
-            className={specificSettings.model === undefined ? 'opacity-50' : ''}
-          />
-        </>
-      )}
-      {mergedSettings.aiProvider === ModelProvider.Azure && (
-        <>
-          <CreatableSelect
-            label={t('Azure Deployment Name')}
-            value={mergedSettings.azureDeploymentName}
-            onChangeValue={(v) => updateSettingsEdit({ azureDeploymentName: v })}
-            // 选项直接读取和修改全局设置，这样用户体验会更好
-            options={globalSettings.azureDeploymentNameOptions}
-            onUpdateOptions={(v) => {
-              setGlobalSettings((globalSettings) => ({
-                ...globalSettings,
-                azureDeploymentNameOptions: v,
-              }))
-            }}
-            className={specificSettings.azureDeploymentName === undefined ? 'opacity-50' : ''}
-          />
-        </>
-      )}
-      {mergedSettings.aiProvider === ModelProvider.ChatGLM6B && (
-        <>
-          <ChatGLMModelSelect
-            settingsEdit={mergedSettings}
-            setSettingsEdit={updateSettingsEdit}
-            className={specificSettings.chatglmModel === undefined ? 'opacity-50' : ''}
-          />
-        </>
-      )}
-      {mergedSettings.aiProvider === ModelProvider.Claude && (
-        <>
-          <ClaudeModelSelect
-            settingsEdit={mergedSettings}
-            setSettingsEdit={updateSettingsEdit}
-            className={specificSettings.claudeModel === undefined ? 'opacity-50' : ''}
-          />
-        </>
-      )}
-      {mergedSettings.aiProvider === ModelProvider.Ollama && (
-        <>
-          <OllamaHostInput
-            ollamaHost={mergedSettings.ollamaHost}
-            setOllamaHost={(v) => updateSettingsEdit({ ollamaHost: v })}
-            className={specificSettings.ollamaHost === undefined ? 'opacity-50' : ''}
-          />
-          <OllamaModelSelect
-            settingsEdit={mergedSettings}
-            setSettingsEdit={updateSettingsEdit}
-            className={specificSettings.ollamaModel === undefined ? 'opacity-50' : ''}
-          />
-        </>
-      )}
-      {mergedSettings.aiProvider === ModelProvider.Gemini && (
-        <>
-          <GeminiModelSelect
-            settingsEdit={mergedSettings}
-            setSettingsEdit={updateSettingsEdit}
-            className={specificSettings.geminiModel === undefined ? 'opacity-50' : ''}
-          />
-        </>
-      )}
-      {mergedSettings.aiProvider === ModelProvider.Groq && (
-        <>
-          <GropModelSelect
-            settingsEdit={mergedSettings}
-            setSettingsEdit={updateSettingsEdit}
-            className={specificSettings.groqModel === undefined ? 'opacity-50' : ''}
-          />
-        </>
-      )}
-      {mergedSettings.aiProvider === ModelProvider.DeepSeek && (
-        <>
-          <DeepSeekModelSelect
-            settingsEdit={mergedSettings}
-            setSettingsEdit={updateSettingsEdit}
-            className={specificSettings.deepseekModel === undefined ? 'opacity-50' : ''}
-          />
-        </>
-      )}
-      {mergedSettings.aiProvider === ModelProvider.SiliconFlow && (
-        <>
-          <SiliconflowModelSelect
-            settingsEdit={mergedSettings}
-            setSettingsEdit={updateSettingsEdit}
-            className={specificSettings.siliconCloudModel === undefined ? 'opacity-50' : ''}
-          />
-        </>
-      )}
-      {mergedSettings.aiProvider === ModelProvider.LMStudio && (
-        <>
-          <LMStudioModelSelect
-            settingsEdit={mergedSettings}
-            setSettingsEdit={updateSettingsEdit}
-            className={specificSettings.lmStudioModel === undefined ? 'opacity-50' : ''}
-          />
-        </>
-      )}
-      {mergedSettings.aiProvider === ModelProvider.Perplexity && (
-        <>
-          <PerplexityModelSelect
-            settingsEdit={mergedSettings}
-            setSettingsEdit={updateSettingsEdit}
-            className={specificSettings.perplexityModel === undefined ? 'opacity-50' : ''}
-          />
-        </>
-      )}
-      {mergedSettings.aiProvider === ModelProvider.XAI && (
-        <>
-          <XAIModelSelect
-            settingsEdit={mergedSettings}
-            setSettingsEdit={updateSettingsEdit}
-            className={specificSettings.xAIModel === undefined ? 'opacity-50' : ''}
-          />
-        </>
-      )}
-      {mergedSettings.aiProvider === ModelProvider.Custom && sessionCustomProviderModel && globalCustomProvider && (
-        <>
-          <CreatableSelect
-            label={t('model')}
-            value={sessionCustomProviderModel}
-            options={globalCustomProvider.modelOptions || []}
-            onChangeValue={(v) => {
-              updateSettingsEdit({
-                customProviders: mergedSettings.customProviders.map((provider) => {
-                  if (provider.id === mergedSettings.selectedCustomProviderId) {
-                    return { ...provider, model: v }
-                  }
-                  return provider
-                }),
-              })
-            }}
-            onUpdateOptions={(v) => {
-              setGlobalSettings((globalSettings) => ({
-                ...globalSettings,
-                customProviders: globalSettings.customProviders.map((provider) => {
-                  if (provider.id === mergedSettings.selectedCustomProviderId) {
-                    return { ...provider, modelOptions: v }
-                  }
-                  return provider
-                }),
-              }))
-            }}
-            className={specificSettings.customProviders === undefined ? 'opacity-50' : ''}
-          />
-        </>
-      )}
+    </Stack>
+  )
+}
+
+function GoogleProviderConfig({
+  settings,
+  onSettingsChange,
+}: {
+  settings: SessionSettings
+  onSettingsChange: (data: Session['settings']) => void
+}) {
+  const { t } = useTranslation()
+  const providerOptions = settings?.providerOptions?.google || {}
+
+  const handleConfigChange = (config: { budgetTokens: number; enabled: boolean }) => {
+    onSettingsChange({
+      providerOptions: {
+        google: { thinkingConfig: { thinkingBudget: config.budgetTokens, includeThoughts: config.enabled } },
+      },
+    })
+  }
+
+  return (
+    <ThinkingBudgetConfig
+      currentBudgetTokens={providerOptions.thinkingConfig?.thinkingBudget || 0}
+      isEnabled={(providerOptions.thinkingConfig?.thinkingBudget || 0) > 0}
+      onConfigChange={handleConfigChange}
+      tooltipText={t('Thinking Budget only works for 2.0 or later models')}
+      minValue={0}
+    />
+  )
+}
+
+export function ChatConfig({
+  settings,
+  onSettingsChange,
+}: {
+  settings: Session['settings']
+  onSettingsChange: (data: Session['settings']) => void
+}) {
+  const { t } = useTranslation()
+
+  return (
+    <Stack gap="md">
       <MaxContextMessageCountSlider
-        value={toBeRemoved_getContextMessageCount(
-          mergedSettings.openaiMaxContextMessageCount,
-          mergedSettings.maxContextMessageCount
+        value={settings?.maxContextMessageCount ?? chatSessionSettings().maxContextMessageCount!}
+        onChange={(v) => onSettingsChange({ maxContextMessageCount: v })}
+      />
+      <Stack gap="xs">
+        <Flex align="center" gap="xs">
+          <Text size="sm" fw="600">
+            {t('Temperature')}
+          </Text>
+          <Tooltip
+            label={t(
+              'Modify the creativity of AI responses; the higher the value, the more random and intriguing the answers become, while a lower value ensures greater stability and reliability.'
+            )}
+            withArrow={true}
+            maw={320}
+            className="!whitespace-normal"
+            zIndex={3000}
+          >
+            <IconInfoCircle size={20} className="text-[var(--mantine-color-chatbox-tertiary-text)]" />
+          </Tooltip>
+        </Flex>
+
+        <SliderWithInput value={settings?.temperature ?? 0.6} onChange={(v) => onSettingsChange({ temperature: v })} max={2} />
+      </Stack>
+      <Stack>
+        {settings && settings.provider === 'claude' && (
+          <ClaudeProviderConfig settings={settings} onSettingsChange={onSettingsChange} />
         )}
-        onChange={(v) => updateSettingsEdit({ maxContextMessageCount: v })}
-        className={
-          specificSettings.maxContextMessageCount === undefined &&
-          specificSettings.openaiMaxContextMessageCount === undefined
-            ? 'opacity-50'
-            : ''
-        }
-      />
-      <TemperatureSlider
-        value={mergedSettings.temperature}
-        onChange={(v) => updateSettingsEdit({ temperature: v })}
-        className={specificSettings.temperature === undefined ? 'opacity-50' : ''}
-      />
-      <TopPSlider
-        topP={mergedSettings.topP}
-        setTopP={(v) => updateSettingsEdit({ topP: v })}
-        className={specificSettings.topP === undefined ? 'opacity-50' : ''}
-      />
-    </>
+        {settings && settings.provider === 'openai' && (
+          <OpenAIProviderConfig settings={settings} onSettingsChange={onSettingsChange} />
+        )}
+        {settings && settings.provider === 'gemini' && (
+          <GoogleProviderConfig settings={settings} onSettingsChange={onSettingsChange} />
+        )}
+      </Stack>
+      {/* <Stack gap="xs">
+        <Text size="sm" fw="600">
+          {t('Top P')}
+        </Text>
+
+        <SliderWithInput value={settings?.topP ?? 0} onChange={(v) => onSettingsChange({ topP: v })} />
+      </Stack> */}
+    </Stack>
   )
 }
 
@@ -491,7 +577,7 @@ function PictureConfig(props: { dataEdit: Session; setDataEdit: (data: Session) 
   const { dataEdit, setDataEdit } = props
   const globalSettings = useAtomValue(atoms.settingsAtom)
   const sessionSettings = sessionActions.mergeSettings(globalSettings, dataEdit.settings || {}, dataEdit.type || 'chat')
-  const updateSettingsEdit = (updated: Partial<ModelSettings>) => {
+  const updateSettingsEdit = (updated: Partial<SessionSettings>) => {
     setDataEdit({
       ...dataEdit,
       settings: {
@@ -501,17 +587,17 @@ function PictureConfig(props: { dataEdit: Session; setDataEdit: (data: Session) 
     })
   }
   return (
-    <div className="mt-8">
+    <Stack gap="md" className="mt-8">
       <ImageStyleSelect
-        value={sessionSettings.dalleStyle}
+        value={sessionSettings.dalleStyle || pictureSessionSettings().dalleStyle!}
         onChange={(v) => updateSettingsEdit({ dalleStyle: v })}
         className={sessionSettings.dalleStyle === undefined ? 'opacity-50' : ''}
       />
       <ImageCountSlider
-        value={sessionSettings.imageGenerateNum}
+        value={sessionSettings.imageGenerateNum || pictureSessionSettings().imageGenerateNum!}
         onChange={(v) => updateSettingsEdit({ imageGenerateNum: v })}
         className={sessionSettings.imageGenerateNum === undefined ? 'opacity-50' : ''}
       />
-    </div>
+    </Stack>
   )
 }
