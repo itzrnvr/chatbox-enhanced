@@ -140,7 +140,7 @@ export default function Header(props: Props) {
                   editCurrentSession()
                 }}
               >
-                {currentSession?.name ?? "No session"}
+                {currentSession?.name ?? 'No session'}
               </Typography>
             }
             <div
