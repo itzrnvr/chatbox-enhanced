@@ -21,7 +21,7 @@ function Index() {
       replace: true,
     })
   }, [currentSession])
-  
+
   return (
     <div className="p-2 flex flex-col items-center justify-center h-full">
       <img src={icon} className="w-32 h-32 align-middle" />

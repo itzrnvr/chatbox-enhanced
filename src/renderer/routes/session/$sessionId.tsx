@@ -25,7 +25,6 @@ function RouteComponent() {
     }, 200)
   }, [])
 
-
   return currentSession ? (
     <div className="flex flex-col h-full">
       {/* {

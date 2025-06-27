@@ -64,4 +64,4 @@ export const pasteLongTextAsAFileAtom = focusAtom(settingsAtom, (optic) => optic
 export const licenseDetailAtom = focusAtom(settingsAtom, (optic) => optic.prop('licenseDetail'))
 
 // Related UI state, moved here for proximity to settings
-export const openSettingDialogAtom = atom<SettingWindowTab | null>(null) 
+export const openSettingDialogAtom = atom<SettingWindowTab | null>(null)

@@ -10,7 +10,6 @@ import { createSessionAtom } from './throttleWriteSessionAtom'
 
 // sessions
 
-
 export const sessionsListAtom = atomWithStorage<SessionMeta[]>(StorageKey.ChatSessionsList, [], storage)
 export const sortedSessionsListAtom = atom((get) => sortSessions(get(sessionsListAtom)))
 

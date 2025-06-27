@@ -44,4 +44,4 @@ export const pictureShowAtom = atom<{
 } | null>(null)
 
 // Layout state
-export const widthFullAtom = atomWithStorage<boolean>('widthFull', false) // Stored UI preference 
+export const widthFullAtom = atomWithStorage<boolean>('widthFull', false) // Stored UI preference

@@ -82,12 +82,7 @@ export default function Sidebar(props: {}) {
               height: '100%',
             }}
           >
-            <Box
-              className={cn(
-                'flex justify-between items-center p-0 m-0 mx-2 mb-2',
-                'controls cursor-pointer'
-              )}
-            >
+            <Box className={cn('flex justify-between items-center p-0 m-0 mx-2 mb-2', 'controls cursor-pointer')}>
               <Box>
                 <a href="https://chatboxai.app" target="_blank">
                   <img src={icon} className="w-6 h-6 mr-2 align-middle inline-block" />

@@ -34,13 +34,12 @@ async function initializeApp() {
 
   // 初始化数据
   await initData()
-  
+
   // 数据迁移
   await migration.migrate()
 
   // 最后执行 storage 清理
   await import('./setup/storage_clear')
-
 }
 
 // ==========渲染节点==============

@@ -46,6 +46,10 @@ const configuration: webpack.Configuration = {
 
   target: ['web', 'electron-renderer'],
 
+  watchOptions: {
+    ignored: /node_modules/,
+  },
+
   entry: [
     `webpack-dev-server/client?http://localhost:${port}/dist`,
     'webpack/hot/only-dev-server',
