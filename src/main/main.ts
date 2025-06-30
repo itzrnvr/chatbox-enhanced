@@ -476,8 +476,12 @@ ipcMain.handle('ensureProxy', (event, json) => {
 })
 
 ipcMain.handle('relaunch', () => {
-  app.relaunch()
-  app.quit()
+  if (isDebug) {
+    mainWindow?.webContents.reload()
+  } else {
+    app.relaunch()
+    app.quit()
+  }
 })
 
 ipcMain.handle('analysticTrackingEvent', (event, dataJson) => {

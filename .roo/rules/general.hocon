@@ -1,0 +1,24 @@
+//hocon syntax
+
+{
+  "rules": [
+    {
+      "name": "General Coding Practices",
+      "description": "Adhere to standard coding conventions and best practices.",
+      "rules": [
+        """When encountering a recurring issue, you must add a detailed 
+        summary on top of all the related files that would serve as context 
+        when we read them and modify them again. This will help us avoid 
+        repeating the same mistakes.""",
+        
+        "Avoid unnecessary complexity.",
+        "Respect the existing codebase structure and conventions.",
+        "Write clean, readable, and maintainable code.",
+        "Use meaningful variable and function names.",
+        "Comment complex logic or non-obvious parts of the code.",
+        "Follow consistent indentation and formatting.",
+        "Prioritize security and performance."
+      ]
+    }
+  ]
+}
