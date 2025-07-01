@@ -131,10 +131,10 @@ function SidebarButtons(props: { sessionListRef: React.RefObject<HTMLDivElement>
   const isSmallScreen = useIsSmallScreen()
 
   const handleCreateNewSession = useCallback(() => {
-    // sessionActions.createEmpty('chat')
-    // if (sessionListRef.current) {
-    //   sessionListRef.current.scrollTo(0, 0)
-    // }
+    sessionActions.createEmpty('chat')
+    if (sessionListRef.current) {
+      sessionListRef.current.scrollTo(0, 0)
+    }
     navigate({ to: `/` })
 
     // On small screen, when click create new session happens
