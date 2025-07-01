@@ -1,4 +1,20 @@
 const changelog = `
+### v1.14.3 - 2025.06.28
+
+1. Fixed issue where exporting data on mobile would cause a crash
+2. Added global model parameter settings
+3. Fixed some markdown and Latex display issues
+4. Fixed issue where some OpenRouter models didn't show thinking content
+5. Compatible with MCP environment variables containing = characterss
+
+Thanks to @jakub-nezasa for their contributions
+
+### v1.14.2 - 2025.06.19
+
+1. Fixed issue where pressing Enter for a new line on mobile would send the message immediately
+2. Fixed issue where send button was disabled on some devices
+3. Adjusted new thread button size
+
 ### v1.14.1 - 2025.06.16
 
 1. Fixed issue where provider settings were lost after restarting the app
@@ -62,6 +78,7 @@ Thanks to @xiaoxiaowesley, @chaoliu719, @Jesse205, @trrahul for their contributi
 3. Improved desktop UI, removing native titlebar
 4. Optimized mobile storage performance
 5. Import backups now merge conversation lists instead of overwriting
+6. Update new thread icon
 
 ### v1.11.12 - 2025.04.15
 
