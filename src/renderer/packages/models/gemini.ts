@@ -77,6 +77,40 @@ export default class Gemeni extends AbstractAISDKModel {
     return settings
   }
 
+  async uploadFile(file: File): Promise<string> {
+    const uploadUrl = `${
+      normalizeGeminiHost(this.options.geminiAPIHost).apiHost.split('/v1beta')[0]
+    }/upload/v1beta/files`
+
+    const response = await fetch(uploadUrl, {
+      method: 'POST',
+      body: file,
+      headers: {
+        'x-goog-api-key': this.options.geminiAPIKey,
+        'Content-Type': file.type,
+        'x-goog-file-name': file.name
+      }
+    })
+
+    if (!response.ok) {
+      const errorStatus = response.status
+      const errorStatusText = response.statusText
+      const errorBody = await response.text()
+      console.error(`Gemini file upload failed: Status ${errorStatus} ${errorStatusText}`, errorBody)
+      throw new ApiError(`Failed to upload file: ${errorBody || 'Unknown error'}`)
+    }
+
+    const json = await response.json()
+    console.log('Gemini file upload response:', json)
+    if (json.file?.uri) {
+      return json.file.uri
+    }
+    if (json.name) {
+      return json.name
+    }
+    throw new ApiError('Failed to upload file: ' + JSON.stringify(json))
+  }
+
   async listModels(): Promise<string[]> {
     // https://ai.google.dev/api/models#method:-models.list
     type Response = {

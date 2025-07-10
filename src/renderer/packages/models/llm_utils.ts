@@ -80,7 +80,9 @@ export function normalizeGeminiHost(apiHost: string) {
   if (apiHost.endsWith('/')) {
     apiHost = apiHost.slice(0, apiHost.length - 1)
   }
-  apiHost = `${apiHost}/v1beta`
+  if (!apiHost.endsWith('/v1beta')) {
+    apiHost = `${apiHost}/v1beta`
+  }
   return {
     apiHost,
     apiPath: '/models/[model]',

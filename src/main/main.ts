@@ -259,6 +259,10 @@ async function createWindow() {
 
   mainWindow.loadURL(resolveHtmlPath('index.html'))
 
+  if (isDebug) {
+    mainWindow.webContents.openDevTools()
+  }
+
   mainWindow.on('ready-to-show', () => {
     if (!mainWindow) {
       throw new Error('"mainWindow" is not defined')

@@ -30,6 +30,21 @@ export const settingsAtom = atom(
     const settings = Object.assign({}, defaults.settings(), _settings)
     settings.shortcuts = Object.assign({}, defaults.settings().shortcuts, _settings.shortcuts)
     settings.mcp = Object.assign({}, defaults.settings().mcp, _settings.mcp)
+    // Deep-merge each provider's settings with defaults to avoid missing properties (e.g., apiHost)
+    const defaultProviders = defaults.settings().providers || {}
+    settings.providers = settings.providers || {}
+    for (const key of Object.keys(defaultProviders)) {
+      settings.providers[key] = {
+        ...defaultProviders[key],
+        ...(settings.providers[key] || {}),
+      }
+    }
+    // Also preserve any custom providers not in defaults
+    for (const key of Object.keys(settings.providers)) {
+      if (!defaultProviders[key]) {
+        settings.providers[key] = settings.providers[key]
+      }
+    }
     return settings
   },
   (get, set, update: SetStateAction<Settings>) => {

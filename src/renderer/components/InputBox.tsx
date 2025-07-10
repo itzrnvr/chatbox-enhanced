@@ -186,6 +186,7 @@ const InputBox = forwardRef<InputBoxRef, InputBoxProps>(
           needGenerating,
         })
 
+
         if (!res) {
           return
         }

@@ -231,6 +231,12 @@ async function convertContentParts<T extends TextPart | ImagePart | FilePart>(
             ...(imageType === 'image' ? { image: imageData } : { data: imageData }),
             mimeType: 'image/png',
           } as T
+        } else if (c.type === 'file') {
+          return {
+            type: 'file',
+            data: await c.file.arrayBuffer(),
+            mimeType: c.mimeType,
+          } as T
         }
         return null
       })
